@@ -1,0 +1,183 @@
+{
+  "description": "Agentic RAG System for CVPR Papers",
+  "id": "agentic-rag-cvpr",
+  "is_component": false,
+  "data": {
+    "nodes": [
+      {
+        "id": "chat-input",
+        "type": "ChatInput",
+        "position": {"x": -650, "y": 0},
+        "data": {
+          "input_value": "",
+          "sender": "user",
+          "sender_name": "User",
+          "should_store_message": true
+        }
+      },
+      {
+        "id": "pdf-loader",
+        "type": "FileLoader",
+        "position": {"x": -400, "y": -150},
+        "data": {
+          "recursive": true,
+          "file_types": ["pdf", "txt"],
+          "path": "./data"
+        }
+      },
+      {
+        "id": "text-splitter",
+        "type": "TextSplitter",
+        "position": {"x": -150, "y": -150},
+        "data": {
+          "chunk_size": 1000,
+          "chunk_overlap": 200,
+          "separator": "\n"
+        }
+      },
+      {
+        "id": "embedding",
+        "type": "OllamaEmbeddings",
+        "position": {"x": 100, "y": -150},
+        "data": {
+          "model": "mxbai-embed-large"
+        }
+      },
+      {
+        "id": "vector-store",
+        "type": "Chroma",
+        "position": {"x": 350, "y": -150},
+        "data": {
+          "persist_directory": "./db/chroma_langchain_db",
+          "collection_name": "cvpr_papers"
+        }
+      },
+      {
+        "id": "retriever",
+        "type": "Retriever",
+        "position": {"x": 600, "y": 0},
+        "data": {
+          "search_type": "similarity",
+          "search_kwargs": {"k": 5}
+        }
+      },
+      {
+        "id": "ollama-llm",
+        "type": "ChatOllama",
+        "position": {"x": 850, "y": 0},
+        "data": {
+          "model": "llama3",
+          "temperature": 0.2,
+          "max_tokens": 2048,
+          "format": "json"
+        }
+      },
+      {
+        "id": "prompt",
+        "type": "Prompt",
+        "position": {"x": 850, "y": -200},
+        "data": {
+          "template": "You are a CVPR Research Assistant.\n\nUse the retrieved papers to answer precisely.\n\nQuestion:\n{{question}}\n\nRelevant context:\n{{context}}\n\nAnswer in clear, structured form."
+        }
+      },
+      {
+        "id": "rag-chain",
+        "type": "RAGChain",
+        "position": {"x": 1100, "y": 0},
+        "data": {}
+      },
+      {
+        "id": "memory",
+        "type": "ConversationBufferMemory",
+        "position": {"x": 1100, "y": -200},
+        "data": {
+          "key": "chat_history",
+          "memory_key": "history"
+        }
+      },
+      {
+        "id": "agent",
+        "type": "ReActAgent",
+        "position": {"x": 1350, "y": 0},
+        "data": {
+          "verbose": true,
+          "max_iterations": 5
+        }
+      },
+      {
+        "id": "answer-output",
+        "type": "ChatOutput",
+        "position": {"x": 1600, "y": 0},
+        "data": {}
+      }
+    ],
+    "edges": [
+      {
+        "source": "chat-input",
+        "sourceHandle": "message",
+        "target": "rag-chain",
+        "targetHandle": "input"
+      },
+      {
+        "source": "pdf-loader",
+        "sourceHandle": "documents",
+        "target": "text-splitter",
+        "targetHandle": "documents"
+      },
+      {
+        "source": "text-splitter",
+        "sourceHandle": "documents",
+        "target": "embedding",
+        "targetHandle": "documents"
+      },
+      {
+        "source": "embedding",
+        "sourceHandle": "embeddings",
+        "target": "vector-store",
+        "targetHandle": "embeddings"
+      },
+      {
+        "source": "vector-store",
+        "sourceHandle": "retriever",
+        "target": "retriever",
+        "targetHandle": "retriever"
+      },
+      {
+        "source": "prompt",
+        "sourceHandle": "prompt",
+        "target": "rag-chain",
+        "targetHandle": "prompt"
+      },
+      {
+        "source": "retriever",
+        "sourceHandle": "documents",
+        "target": "rag-chain",
+        "targetHandle": "documents"
+      },
+      {
+        "source": "ollama-llm",
+        "sourceHandle": "llm",
+        "target": "rag-chain",
+        "targetHandle": "llm"
+      },
+      {
+        "source": "rag-chain",
+        "sourceHandle": "output",
+        "target": "agent",
+        "targetHandle": "input"
+      },
+      {
+        "source": "memory",
+        "sourceHandle": "memory",
+        "target": "agent",
+        "targetHandle": "memory"
+      },
+      {
+        "source": "agent",
+        "sourceHandle": "output",
+        "target": "answer-output",
+        "targetHandle": "message"
+      }
+    ]
+  }
+}
